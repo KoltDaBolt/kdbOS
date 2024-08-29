@@ -1,0 +1,90 @@
+-=-=-=-=-= Commonly Used BIOS Interrupts =-=-=-=-=-
+In real-mode programming, BIOS interrupts provide a low-level interface for interacting with hardware.
+
+
+
+-=-=-=-=-= Summary of Common BIOS Interrupts =-=-=-=-=-
+INT 0X10: Video Services (screen output, cursor control, etc.)
+INT 0x13: Disk Services (read/write sectors, drive information, etc.)
+INT 0x16: Keyboard Services (key input, key status, etc.)
+INT 0x19: Bootstrapping (system reboot, boot sequence, etc.)
+INT 0x12: Get Memory Size (conventional memory in KB)
+INT 0x11: System Configuration (hardware information)
+INT 0x15: Miscellaneous System Services (extended memory, shutdown, etc.)
+
+
+
+-=-=-=-=-= INT 0x10 - Video Services (Display Output) =-=-=-=-=-
+Set Video Mode (ah = 0x00):          changes the video mode (e.g., text mode, graphics mode)
+Print Character (ah = 0x0E):         prints a single character on the screen at the cursor position. Character to print is in the AL register
+Set Cursor Position (ah = 0x02):     moves the cursor to a specific position on the screen
+Scroll Screen (ah = 0x06):           scrolls the screen up or down
+
+Example:
+mov ah, 0x0E    ; Teletype output function
+mov al, 'A'     ; Character to print
+int 0x10        ; Call BIOS interrupt
+
+
+
+-=-=-=-=-= INT 0x13 - Disc Services =-=-=-=-=-
+Reset Disk (ah = 0x00):              reset the disk system
+Read Sector (ah = 0x02):             reads one or more sectors from a disk
+Write Sector (ah = 0x03):            writes one or more sectors to a disk
+Get Drive Parameters (ah = 0x08):    retrieves disk parameters such as drive type, size, etc.
+
+Example:
+mov ah, 0x02    ; Function: read sector
+mov al, 1       ; Number of sectors to read
+mov ch, 0       ; Cylinder number
+mov cl, 1       ; Selector number
+mov dh, 0       ; Head number
+mov dl, 0       ; Drive number (0 = A)?
+int 0x13        ; Call BIOS interrupt
+
+
+
+-=-=-=-=-= INT 0x16 - Keyboard Services =-=-=-=-=-
+Get Keystroke (ah = 0x00):           waits for a keypress and returns the ASCII code and scan code of the key pressed. ASCII goes in AL, scan code goes in AH
+Check for Keystroke (ah = 0x01):     checks if a key had been pressed without waiting (non-blocking)
+Read Extended Keystroke (ah = 0x10): reads keystrokes with extended keyboard support (e.g., arrow keys, function keys)
+
+Example:
+mov ah, 0x00    ; Function: wait for keypress
+int 0x16        ; Call BIOS interrupt
+
+
+
+-=-=-=-=-= INT 0x19 - Bootstrapping (Boot Loader) =-=-=-=-=-
+This is responsible for transferring control to the boot device. It is often used to reboot the system or start the boot sequence from BIOS.
+
+Example:
+int 0x19    ; Call BIOS interrupt to reboot
+
+
+
+-=-=-=-=-= INT 0x12 - Get Memory Size =-=-=-=-=-
+This interrupt returns the size of conventional memory in kilobytes (typically up to 640KB)
+
+Example:
+int 0x12    ; AX will hold the size of memory in KB
+
+
+
+-=-=-=-=-= INT 0x11 - Get System Configuration =-=-=-=-=-
+This interrupt returns information about the system's configuration, such as the number of installed disk drives, presence of coprocessors, intsalled memory, etc.
+
+Example:
+int 0x11    ; The result is placed in the AX register
+
+
+
+-=-=-=-=-= INT 0x15 - Miscellaneous System Services =-=-=-=-=-
+Extended Memory Size (ah = 0x88):    returns the size of extended memory
+System Shutdown (ah = 0x4F):         prepares the system for shutdown
+High Memory Area Access (ah = 0x87): enables or disables access to the high memory area
+
+Example:
+mov ah, 0x88
+int 0x15    ; the result is placed in AX
+

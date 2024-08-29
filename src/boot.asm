@@ -19,7 +19,7 @@ print_string:
         lodsb                       ; Loads next byte (character) from the memory location pointed to by the si register into the al register
         cmp al, 0                   ; Compares the value in the al register with 0, checking if we've reached the null terminator
         je .done                    ; If the comparison above is true, jump to .done to end the subroutine
-        call print_char             ; 
+        call print_char             
         jmp .next_char
     
     .done:
@@ -27,7 +27,7 @@ print_string:
 
 print_char:
     mov ah, 0x0E                    ; Set ah register to 0x0E. This tells BIOS interrupt 0x10 to use the teletype output function to print a character to the screen
-    int 0x10                        ; Calls BIOS interrupt 0x16
+    int 0x10                        ; Calls BIOS interrupt 0x10
     ret
 
 get_key:

@@ -1,0 +1,78 @@
+-=-=-=-=-= General Purpose Registers Table =-=-=-=-=-
+|   64-bit  |   32-bit  |   16-bit  |   8-bit High  |   8-bit Low  |
++-----------+-----------+-----------+---------------+---------------+
+|   RAX     |   EAX     |   AX      |	AH          |	AL          |
++-----------+-----------+-----------+---------------+---------------+
+|   RBX     |	EBX     |	BX      |	BH          |	BL          |
++-----------+-----------+-----------+---------------+---------------+
+|   RCX     |	ECX     |  	CX      |	CH          |	CL          |
++-----------+-----------+-----------+---------------+---------------+
+|   RDX     |	EDX     |	DX      |	DH          |	DL          |
++-----------+-----------+-----------+---------------+---------------+
+|   RSI     |	ESI     |	SI      |	n/a         |	SIL         |
++-----------+-----------+-----------+---------------+---------------+
+|   RDI     |	EDI     |	DI      |	n/a         |	DIL         |
++-----------+-----------+-----------+---------------+---------------+
+|   RBP     |	EBP     |	BP      |	n/a         |	BPL         |
++-----------+-----------+-----------+---------------+---------------+
+|   RSP     |	ESP     |	SP      |	n/a         |	SPL         |
++-----------+-----------+-----------+---------------+---------------+
+|   R8      |	R8D     |	R8W     |	n/a         |	R8B         |
++-----------+-----------+-----------+---------------+---------------+
+|   R9      |	R9D     |	R9W     |	n/a         |	R9B         |
++-----------+-----------+-----------+---------------+---------------+
+|   R10     |	R10D    |	R10W    |	n/a        |	R10B        |
++-----------+-----------+-----------+---------------+---------------+
+|   R11     |	R11D    |	R11W    |	n/a        |	R11B        |
++-----------+-----------+-----------+---------------+---------------+
+|   R12     |	R12D    |	R12W    |	n/a        |	R12B        |
++-----------+-----------+-----------+---------------+---------------+
+|   R13     |	R13D    |	R13W    |	n/a        |	R13B        |
++-----------+-----------+-----------+---------------+---------------+
+|   R14     |	R14D    |	R14W    |	n/a        |	R14B        |
++-----------+-----------+-----------+---------------+---------------+
+|   R15     |	R15D    |	R15W    |	n/a        |	R15B        |
++-----------+-----------+-----------+---------------+---------------+
+
+
+
+-=-=-=-=-= Register Sizes =-=-=-=-=-
+The 64-bit registers are used for 64-bit values and are the full-size registers.
+The 32-bit versions are the lower 32 bits of the 64-bit registers.
+The 16-bit versions are the lower 16 bits of the 32-bit registers.
+The high 8 bit registers are the upper 8 bits of the 16-bit registers.
+The low 8 bit registers are the lowest 8 bits of the registers.
+
+|   00000000    |   00000000    |   00000000    |   00000000    |   00000000    |   00000000    |   00000000    |   00000000    |
+|   RAX                                                                                                                         |
+----------------------------------------------------------------|   EAX                                                         |
+------------------------------------------------------------------------------------------------|   AX                          |
+------------------------------------------------------------------------------------------------|   AH          |   AL          |
+
+
+
+-=-=-=-=-= Specific Registers and Their Use =-=-=-=-=-
+RAX/EAX/AX/AL/AH - are accumulator registers, traditionally used for arithmetic and I/O operations.
+RBX/EBX/BX/BL/BH - are base registers, used for various purposes, especially for indexing memory or handling data.
+RCX/ECX/CX/CL/CH - are count registers, often used as a loop counter in iteration and shifts/rotations.
+RDX/EDX/DX/DL/DH - are data registers, used for arithmetic and I/O operations. In multiplication and division, DX often holds part of the result.
+RSI/ESI/SI/SIL   - are source index registers, often used for string operations. These hold the address of the source data in operations like movsb.
+RDI/EDI/DI/DIL   - are destination index registers, also used for string operations. These hold the address of the destination in operations like movsb.
+RBP/EBP/BP/BPL   - are base pointer registers, often used to point to the base of the current stack frame in funcion calls.
+RSP/ESP/SP/SPL   - are stack pointer registers, which point to the top of the stack. These are automatically adjusted by instructions like push, pop, call, and ret.
+R8 to R15        - are additional general-purpose registers introduced in x86_64. These have 64-bit, 32-bit, 16-bit, and 8-bit forms, but they do not have high 8-bit registers.
+
+
+
+-=-=-=-=-= Special Purpose Registers =-=-=-=-=-
+RIP    - is the instruction poniter. It holds the address of the next insturction to be executed.
+RFLAGS - is the flags register, which contains various status flags that reflect the result of arithmetic and logical operations (e.g., zero flag, carry flag, overflow flag).
+
+
+
+-=-=-=-=-= Segment Registers =-=-=-=-=-
+CS (Code Segment)  - points to the segment containing the code being executed.
+DS (Data Segment)  - points to the segment containing data.
+SS (Stack Segment) - points to the segment containing the stack.
+ES/FS/GS           - extra segment registers, occasionally used for special purposes or system-level operations.
+
