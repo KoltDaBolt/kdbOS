@@ -6,13 +6,45 @@ start:
     mov ds, ax                      ; Set the data segment (ds) register to 0
     mov es, ax                      ; Set the extra segment (es) register to 0
 
-    mov si, msg                     ; Moves msg into the si register
+    mov si, mem_map_msg             ; Moves msg into the si register
     call print_string
 
-main_loop:
-    call get_key
-    call print_char
-    jmp main_loop
+    call mem_detection
+
+    call print_memory_map
+
+    jmp $
+
+mem_detection:
+   clc
+   int 0x12                         ; ax = size of low memory in KB starting at address 0
+   ret
+
+print_memory_map:
+    push ax                         ; save ax, bx, and cx for later restoration, since we will be using these registers
+    push bx
+    push cx
+    xor cx, cx                      ; clear the digit counter
+
+    .convert_loop:                  ; algorithm to convert binary to decimal
+        xor dx, dx
+        mov bx, 10
+        div bx                      ; ax = size of memory, div bx => ax / bx => dx = remainder
+        add dl, '0'
+        push dx
+        inc cx
+        cmp ax, 0
+        jne .convert_loop
+    
+    .print_loop:
+        pop dx
+        mov al, dl
+        call print_char
+        loop .print_loop
+        pop cx
+        pop bx
+        pop ax
+        ret
 
 print_string:
     .next_char:
@@ -26,17 +58,12 @@ print_string:
         ret
 
 print_char:
-    mov ah, 0x0E                    ; Set ah register to 0x0E. This tells BIOS interrupt 0x10 to use the teletype output function to print a character to the screen
+    mov ah, 0x0E                    ; Set ah register to 0x0E. This tells BIOS interrupt 0x10 to use the teletype output function to print a character (stored in al) to the screen
     int 0x10                        ; Calls BIOS interrupt 0x10
     ret
 
-get_key:
-    xor ah, ah                      ; Clears ah register. Setting this to 0 tells BIOS interrupt 0x16 to wait for a key press
-    int 0x16                        ; Calls BIOS interrupt 0x16
-    ret
-
 section .data
-    msg db 'Hello World!', 0
+    mem_map_msg db 'Memory Map: ', 0
 
 times 510 - ($ - $$) db 0           ; Pads the rest of the bootloader with zeroes to 512 bytes
 dw 0xAA55                           ; Boot signature

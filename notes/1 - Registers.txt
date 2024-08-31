@@ -21,17 +21,17 @@
 +-----------+-----------+-----------+---------------+---------------+
 |   R9      |	R9D     |	R9W     |	n/a         |	R9B         |
 +-----------+-----------+-----------+---------------+---------------+
-|   R10     |	R10D    |	R10W    |	n/a        |	R10B        |
+|   R10     |	R10D    |	R10W    |	n/a         |	R10B        |
 +-----------+-----------+-----------+---------------+---------------+
-|   R11     |	R11D    |	R11W    |	n/a        |	R11B        |
+|   R11     |	R11D    |	R11W    |	n/a         |	R11B        |
 +-----------+-----------+-----------+---------------+---------------+
-|   R12     |	R12D    |	R12W    |	n/a        |	R12B        |
+|   R12     |	R12D    |	R12W    |	n/a         |	R12B        |
 +-----------+-----------+-----------+---------------+---------------+
-|   R13     |	R13D    |	R13W    |	n/a        |	R13B        |
+|   R13     |	R13D    |	R13W    |	n/a         |	R13B        |
 +-----------+-----------+-----------+---------------+---------------+
-|   R14     |	R14D    |	R14W    |	n/a        |	R14B        |
+|   R14     |	R14D    |	R14W    |	n/a         |	R14B        |
 +-----------+-----------+-----------+---------------+---------------+
-|   R15     |	R15D    |	R15W    |	n/a        |	R15B        |
+|   R15     |	R15D    |	R15W    |	n/a         |	R15B        |
 +-----------+-----------+-----------+---------------+---------------+
 
 
@@ -65,7 +65,7 @@ R8 to R15        - are additional general-purpose registers introduced in x86_64
 
 
 -=-=-=-=-= Special Purpose Registers =-=-=-=-=-
-RIP    - is the instruction poniter. It holds the address of the next insturction to be executed.
+RIP    - is the instruction pointer. It holds the address of the next insturction to be executed.
 RFLAGS - is the flags register, which contains various status flags that reflect the result of arithmetic and logical operations (e.g., zero flag, carry flag, overflow flag).
 
 

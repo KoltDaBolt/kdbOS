@@ -1,0 +1,67 @@
+***IMPORTANT***
+All information below is information I have been gathering from various sources online.
+I have successfully been able to detect the amount of low memory, but have yet been able to map high system memory.
+Some information below may be incomplete or incorrect.
+Do your own research!!!
+
+To detect low memory, use BIOS interrupt 0x12. The amount of free memory in this region is stored in KB in the ax register.
+
+To detect system memory, you must use BIOS interrupt 0x15 with function 0xE820.
+
+-=-=-=-=-= Important Registers During this Process =-=-=-=-=-
+The AX register is used to specify the BIOS function to use. This must be set to 0xE820 (the BIOS function)
+    - On success, this register will be set to the same signature as the dx register, so for subsequent calls, reset this
+
+The BX register is used as an index into the memory map you're requesting.
+    - During initialization, setting bx to 0 signals to the BIOS that you want to start retrieving the memory map from the first entry (i.e., the 0th index).
+    - After each call, the BIOS updates bx with a value that serves as a continuation point for the next call.
+        - In essence, bx contains a pointer or an index to the next memory map entry
+    - After a call, if bx is set to 0, it indicates that the memory map has been completely retrieved and there are no more entries left.
+
+The CX register holds the size of an entry in the table. In real mode this is usually 20 bytes while in protected mode this is usually 24 bytes.
+
+The BP register is used as a counter for how many valid entries have been retrieved from the BIOS.
+    - This allows the code to keep track of the number of entries as it processes each one in real time.
+    - Once all entries have been processed, the value in bp is stored at the address you have specified (in my case, 0x8000, which is es:mem_map_buffer)
+        - This final value serves as the memory-mapped buffer's entry count.
+
+The DX register is used for the map signature, the upper half of 'SMAP' is placed here, which is 0x534D
+    - If using protected mode, 0x534D4150 is placed in to EDX.
+    - Again, upon success, the ax register will be set to the same value as dx. So for subsequent calls to BIOS, reset the ax register.
+
+
+
+-=-=-=-=-= Storing Memory Map Entries =-=-=-=-=-
+Upon a successful BIOS call, the entry will be placed at address es:di, that is, the value of the extended segment (0 in my case) offset by the destination index (di in my case is 0x8004).
+
+
+
+-=-=-=-=-= Structure of Memory Map Entry =-=-=-=-=-
+Size          Description
+4 bytes       Lower Base Address
+4 bytes       Upper Base Address (typically 0 in real mode)
+4 bytes       Lower Length
+4 bytes       Upper Length (typically 0 in real mode)
+2/4 bytes     Type
+2/4 bytes     Reserved
+
+Example:
+Base Address: 0x000A0000
+Length:       0x00010000
+Type:         0x01 (Useable Memory)
+
+End Address = 0x000A0000 + 0x00010000 = 0x000B0000
+
+
+
+-=-=-=-=-= Memory Type Codes =-=-=-=-=-
+Useable Memory:                     0x01
+Reserved:                           0x02
+ACPI Reclaimable:                   0x03
+ACPI NVS (Non-Volatile Storage):    0x04
+Memory-Mapped I/O (MMIO):           0x05
+SMRAM (System Management RAM):      0x06
+Bad Memory:                         0x07
+Unuseable:                          0x08
+Reserved (Extended):                0x09
+

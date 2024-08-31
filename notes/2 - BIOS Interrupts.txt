@@ -83,6 +83,7 @@ int 0x11    ; The result is placed in the AX register
 Extended Memory Size (ah = 0x88):    returns the size of extended memory
 System Shutdown (ah = 0x4F):         prepares the system for shutdown
 High Memory Area Access (ah = 0x87): enables or disables access to the high memory area
+System Memory (ax = 0xE820)          Returns a map of system memory entries
 
 Example:
 mov ah, 0x88
