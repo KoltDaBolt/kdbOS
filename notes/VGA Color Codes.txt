@@ -1,0 +1,25 @@
+0x0 - Black
+0x1 - Blue
+0x2 - Green
+0x3 - Cyan
+0x4 - Red
+0x5 - Magenta
+0x6 - Brown
+0x7 - Light Gray - This is the background color limit
+0x8 - Dark Gray
+0x9 - Light Blue
+0xA - Light Green
+0xB - Light Cyan
+0xC - Light Red
+0xD - Light Magenta
+0xE - Yellow
+0xF - White
+
+0xB8000 - Address used by VGA for video stuff
+
+First four bits = foreground color
+Next three bits = background color
+Final bit = blinking
+
+So for blinking blue text on a light gray background, you would put the following:
+0xF1 -> 11110001 -> (0001 = blue text) + (111 = light gray background) + (1 = blinking)

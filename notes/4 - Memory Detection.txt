@@ -36,14 +36,13 @@ Upon a successful BIOS call, the entry will be placed at address es:di, that is,
 
 
 
--=-=-=-=-= Structure of Memory Map Entry =-=-=-=-=-
+-=-=-=-=-= Structure of 16-bit Real Mode Memory Map Entry =-=-=-=-=-
 Size          Description
 4 bytes       Lower Base Address
 4 bytes       Upper Base Address (typically 0 in real mode)
 4 bytes       Lower Length
 4 bytes       Upper Length (typically 0 in real mode)
-2/4 bytes     Type
-2/4 bytes     Reserved
+4 bytes       Type
 
 Example:
 Base Address: 0x000A0000
@@ -59,9 +58,5 @@ Useable Memory:                     0x01
 Reserved:                           0x02
 ACPI Reclaimable:                   0x03
 ACPI NVS (Non-Volatile Storage):    0x04
-Memory-Mapped I/O (MMIO):           0x05
-SMRAM (System Management RAM):      0x06
-Bad Memory:                         0x07
-Unuseable:                          0x08
-Reserved (Extended):                0x09
+Bad Memory:                         0x05
 

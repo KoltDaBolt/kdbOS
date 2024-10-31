@@ -1,3 +1,5 @@
+#!/bin/bash
+
 rm kdbOS.iso build/boot.bin
 
 nasm -f bin src/boot.asm -o build/boot.bin

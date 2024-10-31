@@ -1,0 +1,44 @@
+-=-=-=-=-= 16-bit Real Mode vs. 32-bit Protected Mode =-=-=-=-=-
+Starting off, PCs run in 16-bit real mode, which is a mode available on x86 CPUs for backwards compatibility.
+The following are features of real mode:
+    - Address space is limited to 1 MB
+    - Direct hardware access is allowed with no memory protection
+    - Code and data segmentation are managed by the programmer
+
+There are a couple of reasons why we would want to switch to protected mode.
+    - We want to be able to address more than 1 MB of memory, which is necessary for memory management
+    - We want our memory to be protected.
+
+This is where 32-bit protected mode comes in.
+    - Address space has expanded to 4 GB
+    - Support for virtual memory and multitasking has been enabled
+    - Memory protection through methods such as the privilege levels described below, segmentation, and paging.
+
+-=-=-=-=-= OS Privilege Levels =-=-=-=-=-
+Ring 0 - Kernel
+Ring 1
+Ring 2
+Ring 3 - User Mode
+
+-=-=-=-=-= Segmentation =-=-=-=-=-
+Segments of memory regions are defined in a table called the global descriptor table (GDT).
+Each entry can define a memory region and privileges assigned to that region.
+This method is depricated and most operating systems don't use it.
+In modern OSes, the GDT is filled with the minimum amount of entries to make the switch to protected mode and uses a flat memory model.
+In 64-bit long mode, segmentation isn't supported at all.
+
+-=-=-=-=-= Paging =-=-=-=-=-
+With paging, the "memory" seen by a program can be completely remapped by the kernel.
+With this mechanism, each program can be mapped in such a way that different programs don't share any physical memory.
+Paging also allows swapping.
+
+-=-=-=-=-= The A20 Gate =-=-=-=-=-
+This is a hardware relic that was introduced in the 8086 CPU.
+That processor only had 19 address lines, meaning if it tried to access memory above 19 bits, the memory address would wrap around to the beginning.
+Old software relied on this functionality, so to keep backwards compatibility, the A20 gate was introduced to force the 20th bit of memory addressing to 0.
+The sideaffect to this is we cannot access the odd megabytes of memory.
+What this means for us is if we want to access that memory, we need to disable this hack, which means enabling the A20 gate.
+
+-=-=-=-=-= I/O Ports =-=-=-=-=-
+To enable the A20 gate we need to talk to the keyboard controller ... why? Because poor hardware decisions were made.
+This requires us to interact with I/O ports.
