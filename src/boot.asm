@@ -10,6 +10,7 @@ entry:
 
     cli
     call enableA20
+    call getMemoryMap
     call loadGDT
     mov eax, cr0
     or al, 1
@@ -18,6 +19,8 @@ entry:
 
 .pmode:
     [bits 32]
+
+    jmp .halt
 
     mov ax, 0x10
     mov ds, ax
@@ -35,7 +38,7 @@ entry:
     mov [edi], al
     inc edi
 
-    mov [edi], byte 0xF1
+    mov [edi], byte 0x0F
     inc edi
     jmp .loop
 
@@ -90,6 +93,136 @@ A20WaitOutput:
     in al, KbdControllerCommandPort
     test al, 1
     jz A20WaitOutput
+    ret
+
+getMemoryMap:
+    [bits 16]
+
+    mov ax, 0x5000
+    mov es, ax
+    mov di, 0
+
+    mov eax, 0xE820
+    mov ebx, 0
+    mov edx, 0x534D4150
+    mov ecx, 24
+    mov bp, 0
+    mov [es:di + 20], dword 1
+
+    .memory_loop:
+        int 0x15
+        jc .done_mem_map
+        cmp eax, edx
+        jne .done_mem_map
+        test ebx, ebx
+        je .done_mem_map
+
+        push di
+        call printMemoryEntry
+        pop di
+
+        mov eax, 0xE820
+        mov ecx, 24
+        mov edx, 0x534D4150
+        inc bp
+        add di, 24
+        test ebx, ebx
+        jnz .memory_loop
+    
+    .done_mem_map:
+        ret
+
+printMemoryEntry:
+    [bits 16]
+
+    push ax
+    push bx
+    push cx
+    push dx
+    push si
+    push di
+
+    mov eax, [es:di]
+    call printHex
+    mov al, ' '
+    call printChar
+
+    mov eax, [es:di + 8]
+    call printHex
+    mov al, ' '
+    call printChar
+
+    mov eax, [es:di + 16]
+    call printHex
+    
+    mov al, 13
+    call printChar
+    mov al, 10
+    call printChar
+
+    pop di
+    pop si
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    
+    ret
+
+printChar:
+    [bits 16]
+
+    mov ah, 0x0E
+    int 0x10
+
+    ret
+
+printString:
+    [bits 16]
+
+    mov ah, 0x0E
+
+    .print_next:
+        lodsb
+        or al, al
+        jz .done_print_string
+        int 0x10
+        jmp .print_next
+
+    .done_print_string:
+        ret
+
+printHex:
+    [bits 16]
+    
+    push ax
+    push bx
+    push cx
+    push dx
+    mov cx, 8
+
+    .next_digit:
+        rol eax, 4
+        mov bl, al
+        and bl, 0x0F
+        cmp bl, 10
+        jl .print_digit
+        add bl, 'A' - 10
+        jmp .write_digit
+
+    .print_digit:
+        add bl, '0'
+
+    .write_digit:
+        mov ah, 0x0E
+        mov al, bl
+        int 0x10
+        loop .next_digit
+
+    pop dx
+    pop cx
+    pop bx
+    pop ax
     ret
 
 loadGDT:

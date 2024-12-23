@@ -17,9 +17,11 @@
 
 0xB8000 - Address used by VGA for video stuff
 
-First four bits = foreground color
+First bit = blinking
 Next three bits = background color
-Final bit = blinking
+Final four bits = foreground color
 
 So for blinking blue text on a light gray background, you would put the following:
-0xF1 -> 11110001 -> (0001 = blue text) + (111 = light gray background) + (1 = blinking)
+0xF1 -> 11110001 -> (1 = blinking) + (111 = light gray background) + (0001 = blue text)
+
+Plain white text would be (0 = not blinking) + (000 = black background) + (1111 = White text) -> 00001111 = 0x0F
