@@ -20,6 +20,8 @@ The BP register is used as a counter for how many valid entries have been retrie
 The EDX register is used for the map signature, which is 0x534D4150 ('S', 'M', 'A', 'P')
     - Again, upon success, the eax register will be set to the same value as edx. So for subsequent calls to BIOS, reset the eax register.
 
+ES:DI = Buffer for result
+
 
 
 -=-=-=-=-= Storing Memory Map Entries =-=-=-=-=-
@@ -28,13 +30,13 @@ Upon a successful BIOS call, the entry will be placed at address es:di, that is,
 
 
 -=-=-=-=-= Structure of 16-bit Real Mode Memory Map Entry =-=-=-=-=-
-Size          Description
-4 bytes       Lower Base Address
-4 bytes       Upper Base Address (typically 0 in real mode)
-4 bytes       Lower Length
-4 bytes       Upper Length (typically 0 in real mode)
-4 bytes       Type
-4 bytes       ACPI 3.0 Extended Attributes Bitfield (if 24 bytes are returned instead of 20)
+Size            Segmentation          Description
+4 bytes         [es:di]               Lower Base Address
+4 bytes         [es:di + 4]           Upper Base Address (typically 0 in real mode)
+4 bytes         [es:di + 8]           Lower Length
+4 bytes         [es:di + 12]          Upper Length (typically 0 in real mode)
+4 bytes         [es:di + 16]          Type
+4 bytes         [es:di + 20]          ACPI 3.0 Extended Attributes Bitfield (if 24 bytes are returned instead of 20)
 
 Example:
 Base Address: 0x000A0000
@@ -58,3 +60,12 @@ Bad Memory:                         0x05
 Bit 0 - Indicates if the entire entry should be ignored (if the bit is clear).
 Bit 1 - Indicates if the entry is non-volatile (if the bit is set).
 Remaining 30 Bits - Undefined
+
+
+
+-=-=-=-=-= EXTRA: Size Calculations in HEX =-=-=-=-=-
+1 Bit = 0x1
+1 Byte = 0x01
+1 KB = 0x400
+1 MB = 0x100000
+1 GB = 0x40000000

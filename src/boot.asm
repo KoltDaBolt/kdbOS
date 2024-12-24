@@ -2,15 +2,16 @@ org 0x7C00
 bits 16
 
 entry:
-    mov ax, 0
+    xor ax, ax
     mov ds, ax
     mov es, ax
     mov ss, ax
-    mov sp, 0x7C00
+    mov sp, 0x5000
 
     cli
     call enableA20
     call getMemoryMap
+    call printMemoryEntry
     call loadGDT
     mov eax, cr0
     or al, 1
@@ -98,78 +99,107 @@ A20WaitOutput:
 getMemoryMap:
     [bits 16]
 
-    mov ax, 0x5000
-    mov es, ax
-    mov di, 0
+    memmap_entry equ 0x5000
+    mov di, 0x5004
 
     mov eax, 0xE820
-    mov ebx, 0
-    mov edx, 0x534D4150
+    xor ebx, ebx
     mov ecx, 24
-    mov bp, 0
-    mov [es:di + 20], dword 1
+    mov edx, 0x534D4150
+    xor bp, bp
+    mov dword [es:di + 20], 1
+    int 0x15
+    jc short .failed
+    mov edx, 0x534D4150
+    cmp eax, edx
+    jne short .failed
+    test ebx, ebx
+    je short .failed
+    jmp short .jmpin
 
-    .memory_loop:
-        int 0x15
-        jc .done_mem_map
-        cmp eax, edx
-        jne .done_mem_map
-        test ebx, ebx
-        je .done_mem_map
-
-        push di
-        call printMemoryEntry
-        pop di
-
+    .memmap_loop:
         mov eax, 0xE820
+        mov dword [es:di + 20], 1
         mov ecx, 24
+        int 0x15
+        jc short .done_mem_map
         mov edx, 0x534D4150
+
+    .jmpin:
+        jcxz .skip_entry
+        cmp cl, 20
+        jbe short .no_text
+        test byte [es:di + 20], 1
+        je short .skip_entry
+    
+    .no_text:
+        mov eax, [es:di + 8]
+        or eax, [es:di + 12]
+        jz .skip_entry
         inc bp
         add di, 24
+    
+    .skip_entry:
         test ebx, ebx
-        jnz .memory_loop
+        jne short .memmap_loop
     
     .done_mem_map:
+        mov [memmap_entry], bp
+        clc
         ret
 
-printMemoryEntry:
+    .failed:
+        stc
+        ret
+
+printMemoryEntry: ; Keep in mind, x86_64 is little endian
     [bits 16]
 
-    push ax
-    push bx
-    push cx
-    push dx
-    push si
-    push di
+    mov di, 0x5004
+    mov cx, [memmap_entry]
 
-    mov eax, [es:di]
-    call printHex
-    mov al, ' '
-    call printChar
+    .print_mem_loop:
+        cmp cx, 0
+        je .done_print_mem
 
-    mov eax, [es:di + 8]
-    call printHex
-    mov al, ' '
-    call printChar
+        mov eax, [es:di + 4]
+        call printHex
+        mov al, ' '
+        call printChar
 
-    mov eax, [es:di + 16]
-    call printHex
+        mov eax, [es:di]
+        call printHex
+        mov al, ' '
+        call printChar
+
+        mov eax, [es:di + 12]
+        call printHex
+        mov al, ' '
+        call printChar
+
+        mov eax, [es:di + 8]
+        call printHex
+        mov al, ' '
+        call printChar
+
+        mov eax, [es:di + 16]
+        call printHex
+        mov al, ' '
+        call printChar
+        
+        mov al, 13
+        call printChar
+        mov al, 10
+        call printChar
+
+        add di, 24
+        dec cx
+        jmp .print_mem_loop
     
-    mov al, 13
-    call printChar
-    mov al, 10
-    call printChar
+    .done_print_mem:
+        ret
 
-    pop di
-    pop si
-    pop dx
-    pop cx
-    pop bx
-    pop ax
-    
-    ret
-
-printChar:
+printChar:  ; Assumes character to print is in al
     [bits 16]
 
     mov ah, 0x0E
@@ -177,52 +207,31 @@ printChar:
 
     ret
 
-printString:
-    [bits 16]
-
-    mov ah, 0x0E
-
-    .print_next:
-        lodsb
-        or al, al
-        jz .done_print_string
-        int 0x10
-        jmp .print_next
-
-    .done_print_string:
-        ret
-
-printHex:
+printHex:   ; Assumes the number you want to print is in eax
     [bits 16]
     
-    push ax
-    push bx
-    push cx
-    push dx
-    mov cx, 8
+    pusha
+    mov ecx, 8
+    mov ebx, eax
 
     .next_digit:
-        rol eax, 4
-        mov bl, al
-        and bl, 0x0F
-        cmp bl, 10
+        rol ebx, 4
+        mov al, bl
+        and al, 0x0F
+        cmp al, 10
         jl .print_digit
-        add bl, 'A' - 10
-        jmp .write_digit
+        add al, 'A' - 10
+        jmp .print_hex_digit
 
     .print_digit:
-        add bl, '0'
+        add al, '0'
 
-    .write_digit:
+    .print_hex_digit:
         mov ah, 0x0E
-        mov al, bl
         int 0x10
         loop .next_digit
 
-    pop dx
-    pop cx
-    pop bx
-    pop ax
+    popa
     ret
 
 loadGDT:
