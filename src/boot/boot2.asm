@@ -1,48 +1,23 @@
 org 0x7E00
 
-entry:
-    xor ax, ax
-    mov ds, ax
-    mov es, ax
-    mov ss, ax
-    mov sp, 0x7C00
+code_segment equ gdt_kernel_code - gdt
+data_segment equ gdt_kernel_data - gdt
 
-    cli
-    call getMemoryMap
-    call printMemoryEntry
-    call enableA20
-    call loadGDT
-    mov eax, cr0
-    or al, 1
-    mov cr0, eax
-    jmp $
-    ;jmp dword 0x08:.pmode
+mov ax, 0x0000
+mov ds, ax
+mov es, ax
+mov ss, ax
+mov sp, 0x7C00
 
-;.pmode:
-    ;jmp .halt
+memmap_entry equ 0x0500
 
-    ;mov ax, 0x10
-    ;mov ds, ax
-    ;mov ss, ax
-
-    ;mov esi, HELLO
-    ;mov edi, ScreenBuffer
-    ;cld
-
-;.loop:
-    ;lodsb
-    ;or al, al
-    ;jz .done
-
-    ;mov [edi], al
-    ;inc edi
-
-    ;mov [edi], byte 0x0F
-    ;inc edi
-    ;jmp .loop
+call getMemoryMap
+call printMemoryMap
+call enter_protected
 
 getMemoryMap:
-    memmap_entry equ 0x0500
+    pusha
+
     mov di, 0x0504
 
     mov eax, 0xE820
@@ -58,9 +33,9 @@ getMemoryMap:
     jne short .failed
     test ebx, ebx
     je short .failed
-    jmp short .jmpin
+    jmp short .jumpin
 
-    .memmap_loop:
+    .memory_loop:
         mov eax, 0xE820
         mov dword [es:di + 20], 1
         mov ecx, 24
@@ -68,46 +43,44 @@ getMemoryMap:
         jc short .done_mem_map
         mov edx, 0x534D4150
 
-    .jmpin:
+    .jumpin:
         jcxz .skip_entry
         cmp cl, 20
-        jbe short .no_text
+        jbe short .notext
         test byte [es:di + 20], 1
         je short .skip_entry
-    
-    .no_text:
+
+    .notext:
         mov eax, [es:di + 8]
         or eax, [es:di + 12]
         jz .skip_entry
         inc bp
         add di, 24
-    
+
     .skip_entry:
         test ebx, ebx
-        jne short .memmap_loop
-    
+        jne short .memory_loop
+
     .done_mem_map:
         mov [memmap_entry], bp
         clc
+        popa
         ret
 
     .failed:
         stc
         ret
 
-printMemoryEntry: ; Keep in mind, x86_64 is little endian
+printMemoryMap:
     mov di, 0x0504
     mov cx, [memmap_entry]
 
-    .print_mem_loop:
+    .print_entries:
         cmp cx, 0
-        je .done_print_mem
-
+        je .done_print_mem_map
+    
         mov eax, [es:di + 4]
         call print_hex
-        mov al, ' '
-        call print_char
-
         mov eax, [es:di]
         call print_hex
         mov al, ' '
@@ -115,9 +88,6 @@ printMemoryEntry: ; Keep in mind, x86_64 is little endian
 
         mov eax, [es:di + 12]
         call print_hex
-        mov al, ' '
-        call print_char
-
         mov eax, [es:di + 8]
         call print_hex
         mov al, ' '
@@ -125,9 +95,7 @@ printMemoryEntry: ; Keep in mind, x86_64 is little endian
 
         mov eax, [es:di + 16]
         call print_hex
-        mov al, ' '
-        call print_char
-        
+
         mov al, 0x0D
         call print_char
         mov al, 0x0A
@@ -135,102 +103,119 @@ printMemoryEntry: ; Keep in mind, x86_64 is little endian
 
         add di, 24
         dec cx
-        jmp .print_mem_loop
-    
-    .done_print_mem:
+        jmp .print_entries
+
+    .done_print_mem_map:
         ret
 
-enableA20:
-    call A20WaitInput
-    mov al, KbdControllerDisableKeyboard
-    out KbdControllerCommandPort, al
+enter_protected:
+    cli
+    mov ax, 0x00                 
+    mov ds, ax
+    mov es, ax
+    mov ss, ax
+    mov sp, 0x7C00
+    sti
+.load_protected:
+    cli
+    lgdt [gdt_descriptor]
 
-    call A20WaitInput
-    mov al, KbdControllerReadCtrlOutputPort
-    out KbdControllerCommandPort, al
-
-    call A20WaitOutput
-    in al, KbdControllerDataPort
-    push eax
-
-    call A20WaitInput
-    mov al, KbdControllerWriteCtrlOutputPort
-    out KbdControllerCommandPort, al
-
-    call A20WaitInput
-    pop eax
+    in al, 0x92
     or al, 2
-    out KbdControllerDataPort, al
+    out 0x92, al
 
-    call A20WaitInput
-    mov al, KbdControllerEnableKeyboard
-    out KbdControllerCommandPort, al
+    mov eax, cr0
+    or eax, 0x1
+    mov cr0, eax
 
-    call A20WaitInput
-    ret
+    jmp code_segment:load32
+hang:
+    jmp hang   
 
-A20WaitInput:
-    in al, KbdControllerCommandPort
-    test al, 2
-    jnz A20WaitInput
-    ret
+include './src/asmlib/print.asm'
 
-A20WaitOutput:
-    in al, KbdControllerCommandPort
-    test al, 1
-    jz A20WaitOutput
-    ret
+gdt:
+gdt_null:
+    dd 0x0
+    dd 0x0
 
-loadGDT:
-    lgdt [GDTDescriptor]
-    ret
-
-GDT:
-    dq 0
-
+gdt_kernel_code:
     dw 0xFFFF
-    dw 0
-    db 0
-    db 10011010b
-    db 11001111b
-    db 0
+    dw 0x0000
+    db 0x00
+    db 0x9A
+    db 0xCF
+    db 0x00
 
+gdt_kernel_data:
     dw 0xFFFF
-    dw 0
-    db 0
-    db 10010010b
-    db 11001111b
-    db 0
+    dw 0x0000
+    db 0x00
+    db 0x92
+    db 0xCF
+    db 0x00
+gdt_end:
 
-    dw 0xFFFF
-    dw 0
-    db 0
-    db 10011010b
-    db 00001111b
-    db 0
+gdt_descriptor:
+    dw gdt_end - gdt - 1
+    dd gdt
 
-    dw 0xFFFF
-    dw 0
-    db 0
-    db 10010010b
-    db 00001111b
-    db 0
+use32
+load32:
+    mov eax, 6    ; qemu value
+    mov ecx, 100  ; qemu value
+    mov edi, 0x100000
+    call ata_lba_read
 
-GDTDescriptor:
-    dw GDTDescriptor - GDT - 1
-    dd GDT
+    jmp code_segment:0x100000
 
-%include "./src/asmlib/print.asm"
+ata_lba_read:
+    pusha
 
-KbdControllerDataPort               equ 0x60
-KbdControllerCommandPort            equ 0x64
-KbdControllerDisableKeyboard        equ 0xAD
-KbdControllerEnableKeyboard         equ 0xAE
-KbdControllerReadCtrlOutputPort     equ 0xD0
-KbdControllerWriteCtrlOutputPort    equ 0xD1
+    mov ebx, eax
 
-ScreenBuffer                        equ 0xB8000
+    mov edx, 0x1F6
+    shr eax, 24
+    or eax, 0xE0
+    out dx, al
 
-HELLO: db "Hello from protected mode!", 0
+    mov edx, 0x1F2
+    mov al, cl
+    out dx, al
 
-times 2048 - ($ - $$) db 0
+    mov edx, 0x1F3
+    mov eax, ebx
+    out dx, al
+
+    mov edx, 0x1F4
+    mov eax, ebx
+    shr eax, 8
+    out dx, al
+
+    mov edx, 0x1F5
+    mov eax, ebx
+    shr eax, 16
+    out dx, al
+
+    mov edx, 0x1F7
+    mov al, 0x20
+    out dx, al
+
+    .next_sector:
+        push ecx
+
+    .try_again:
+        mov edx, 0x1F7
+        in al, dx
+        test al, 8
+        jz .try_again
+        mov ecx, 256
+        mov edx, 0x1F0
+        rep insw
+        pop ecx
+        loop .next_sector
+
+        popa
+        ret
+
+times 2560 - ($-$$) db 0
