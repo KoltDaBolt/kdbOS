@@ -1,44 +1,45 @@
-ASM = fasm
-GCC = i686-elf-gcc
-LD = i686-elf-ld
-CFLAGS = -g -ffreestanding -falign-jumps -falign-functions -falign-labels -falign-loops -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label  -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
+CODEDIRS=. src/kernel src/kernel/arch/i386 src/kernel/klib
+INCDIRS=. src/include src/include/arch/i386 src/include/klib
 
-SRC_BOOT_DIR = src/boot
-SRC_KERNEL_DIR = src/kernel
-BIN_DIR = bin
-BUILD_DIR = build
-ISO_IMAGE = kdbOS.iso
+ASM = nasm
+ASMFLAGS = -f elf32
 
-init:
-	mkdir -p bin build
+CC = gcc
+DEPFLAGS = -MP -MD
+NOFLAGS = -nostdlib -nostdinc -fno-builtin -fno-stack-protector -nostartfiles -nodefaultlibs -ffreestanding
+CFLAGS = -m32 -Wall -Wextra -Werror -Wno-error=unused-variable -g $(foreach D, $(INCDIRS), -I$(D)) $(DEPFLAGS) $(NOFLAGS)
 
-all: $(ISO_IMAGE)
+LDFLAGS = -T linker.ld -melf_i386
 
-qemu: $(BIN_DIR)/os.bin
+CFILES = $(foreach D, $(CODEDIRS), $(wildcard $(D)/*.c))
+OBJECTS = $(patsubst %.c, %.o, $(CFILES)) src/boot/boot.o
+DEPFILES = $(patsubst %.c, %.d, $(CFILES))
 
-$(BIN_DIR)/os.bin: $(BIN_DIR)/boot.bin $(BIN_DIR)/boot2.bin $(BIN_DIR)/kernel.bin
-	cat $(BIN_DIR)/boot.bin $(BIN_DIR)/boot2.bin $(BIN_DIR)/kernel.bin > $(BIN_DIR)/os.bin
-	dd if=/dev/zero bs=512 count=100 >> $(BIN_DIR)/os.bin
+-include $(DEPFILES)
 
-$(ISO_IMAGE): $(BIN_DIR)/boot.bin $(BIN_DIR)/boot2.bin $(BIN_DIR)/kernel.bin
-	genisoimage -o $(ISO_IMAGE) -b boot.bin -input-charset utf-8 -no-emul-boot $(BIN_DIR)
+.PHONY: all clean runqemu
 
-$(BIN_DIR)/kernel.bin: $(BUILD_DIR)/kernel.asm.o $(BUILD_DIR)/kernel.o
-	$(LD) -T ./linker.ld -o $(BIN_DIR)/kernel.bin -nostdlib $(BUILD_DIR)/kernel.asm.o $(BUILD_DIR)/kernel.o
+all: kernel.elf
+	mkdir -p iso/boot/grub
+	cp grub.cfg iso/boot/grub/grub.cfg
+	cp kernel.elf iso/boot/kernel.elf
+	grub-mkrescue -o kdbOS.iso iso -d /usr/lib/grub/i386-pc
 
-$(BUILD_DIR)/kernel.o: $(SRC_KERNEL_DIR)/kernel.c
-	$(GCC) $(CFLAGS) -std=gnu99 -c $(SRC_KERNEL_DIR)/kernel.c -o $(BUILD_DIR)/kernel.o
+kernel.elf: $(OBJECTS)
+	ld $(LDFLAGS) $(OBJECTS) -o kernel.elf
 
-$(BUILD_DIR)/kernel.asm.o: $(SRC_KERNEL_DIR)/kernel.asm
-	fasm $(SRC_KERNEL_DIR)/kernel.asm $(BUILD_DIR)/kernel.asm.o
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BIN_DIR)/boot2.bin: $(SRC_BOOT_DIR)/boot2.asm
-	fasm $(SRC_BOOT_DIR)/boot2.asm $(BIN_DIR)/boot2.bin
+%.o: %.asm
+	$(ASM) $(ASMFLAGS) $< -o $@
 
-$(BIN_DIR)/boot.bin: $(SRC_BOOT_DIR)/boot.asm
-	fasm $(SRC_BOOT_DIR)/boot.asm $(BIN_DIR)/boot.bin
+runqemu: all
+	qemu-system-i386 -cdrom kdbOS.iso
 
 clean:
-	rm -f $(ISO_IMAGE) $(BIN_DIR)/*.bin $(BUILD_DIR)/*.o
-
-.PHONY: all clean
+	rm -rf src/boot/*.o
+	rm -rf src/kernel/*.o src/kernel/*.d
+	rm -rf src/kernel/arch/i386/*.o src/kernel/arch/i386/*.d
+	rm -rf src/kernel/klib/*.o src/kernel/klib/*.d
+	rm -rf kernel.elf kdbOS.iso iso/
