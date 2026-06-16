@@ -9,3 +9,35 @@ int64_t strlen(const char* str) {
 
     return len;
 }
+
+char* strncpy(const char* src, char* dest, uint32_t n) {
+    if (n == 0) return dest;
+
+    uint32_t i = 0;
+    while (src[i] != '\0' && i < (n - 1)) {
+        dest[i] = src[i];
+        i++;
+    }
+    
+    dest[i] = '\0';
+    return dest;
+}
+
+char* strncat(char* dest, const char* src, uint32_t n) {
+    uint32_t dest_len = strlen(dest);
+    
+    if (dest_len >= n || n == 0) {
+        return dest;
+    }
+
+    uint32_t i = 0;
+    uint32_t max_allowed = n - dest_len - 1;
+
+    while (src[i] != '\0' && i < max_allowed) {
+        dest[dest_len + i] = src[i];
+        i++;
+    }
+    
+    dest[dest_len + i] = '\0';
+    return dest;
+}

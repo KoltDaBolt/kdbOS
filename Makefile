@@ -1,5 +1,5 @@
-CODEDIRS=. src/kernel src/kernel/arch/i386 src/kernel/klib
-INCDIRS=. src/include src/include/arch/i386 src/include/klib
+CODEDIRS=. src/kernel src/kernel/arch/i386 src/kernel/arch/i386/drivers src/kernel/arch/i386/interrupts src/kernel/arch/i386/tables src/kernel/klib src/kernel/vterm
+INCDIRS=. src/include src/include/arch/i386 src/include/arch/i386/drivers src/include/arch/i386/interrupts src/include/arch/i386/tables src/include/klib src/include/vterm
 
 ASM = nasm
 ASMFLAGS = -f elf32
@@ -12,7 +12,8 @@ CFLAGS = -m32 -Wall -Wextra -Werror -Wno-error=unused-variable -g $(foreach D, $
 LDFLAGS = -T linker.ld -melf_i386
 
 CFILES = $(foreach D, $(CODEDIRS), $(wildcard $(D)/*.c))
-OBJECTS = $(patsubst %.c, %.o, $(CFILES)) src/boot/boot.o
+ASMFILES = $(foreach D, $(CODEDIRS), $(wildcard $(D)/*.asm))
+OBJECTS = $(patsubst %.c, %.o, $(CFILES)) $(patsubst %.asm, %.o, $(ASMFILES)) src/boot/boot.o
 DEPFILES = $(patsubst %.c, %.d, $(CFILES))
 
 -include $(DEPFILES)
@@ -35,11 +36,15 @@ kernel.elf: $(OBJECTS)
 	$(ASM) $(ASMFLAGS) $< -o $@
 
 runqemu: all
-	qemu-system-i386 -cdrom kdbOS.iso
+	qemu-system-i386 -m 4G -cdrom kdbOS.iso
 
 clean:
 	rm -rf src/boot/*.o
 	rm -rf src/kernel/*.o src/kernel/*.d
 	rm -rf src/kernel/arch/i386/*.o src/kernel/arch/i386/*.d
+	rm -rf src/kernel/arch/i386/drivers/*.o src/kernel/arch/i386/drivers/*.d
+	rm -rf src/kernel/arch/i386/interrupts/*.o src/kernel/arch/i386/interrupts/*.d
+	rm -rf src/kernel/arch/i386/tables/*.o src/kernel/arch/i386/tables/*.d
 	rm -rf src/kernel/klib/*.o src/kernel/klib/*.d
+	rm -rf src/kernel/vterm/*.o src/kernel/vterm/*.d
 	rm -rf kernel.elf kdbOS.iso iso/

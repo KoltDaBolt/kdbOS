@@ -1,57 +1,62 @@
+#include "asm.h"
 #include "types.h"
-#include "io.h"
+#include "vterm.h"
 #include "string.h"
+#include "multiboot.h"
+#include "gdt.h"
+#include "idt.h"
+#include "pic.h"
+#include "isr.h"
+#include "keyboard.h"
 
-#define DELAY_SHORT     4000000U
-#define DELAY_MEDIUM    30000000U
-#define DELAY_LONG      150000000U
+int kernel_main(uint32_t magic, uint32_t multiboot_ptr) {
+    init_gdt();
+    init_isr();
+    pic_remap();
+    init_idt();
 
-static void wait(uint32_t count) {
-    for (volatile uint32_t i = 0; i < count; i++);
-}
+    vterm_init(COLOR_WHITE, COLOR_BLACK);
+    init_keyboard();
 
-void draw_border(uint16_t row, uint8_t color) {
-    for (uint16_t i = 0; i < SCREEN_COLS / 2; i++) {
-        write_char_to_framebuffer('=', row, i, color, BLACK);
-        write_char_to_framebuffer('=', row, SCREEN_COLS - 1 - i, color, BLACK);
-        wait(DELAY_SHORT);
+    VTermCursor cursor = { .shape = CURSOR_SHAPE_LINE, .visible = false };
+    vterm_configure_cursor(cursor);
+
+    if (magic != 0x2BADB002) {
+        vterm_move_cursor(0, 0);
+        vterm_set_color(COLOR_RED, COLOR_BLACK);
+        kprint_c('M');
+        return 0;
     }
-}
 
-void draw_letter(const char* string, uint16_t row, uint16_t col, uint8_t fg_color, uint8_t bg_color) {
-    for (uint16_t i = 0; string[i] != '\0'; i++) {
-        write_char_to_framebuffer(string[i], row, col + i, fg_color, bg_color);
-        wait(DELAY_MEDIUM);
+    MultibootInfo* mb_info = (MultibootInfo*)multiboot_ptr;
+    if ((mb_info->flags & (1 << 6)) == 0) {
+        vterm_move_cursor(0, 0);
+        vterm_set_color(COLOR_RED, COLOR_BLACK);
+        kprint_c('E');
+        return 0;
     }
-}
 
-int kernel_main() {
-    style_cursor(DISABLE);
+    // -=-=-=-=-= HARDWARE EXCEPTION TEST =-=-=-=-=-
+    // Uncomment these three lines to test division by zero crash
+    // volatile int num1 = 10;
+    // volatile int num2 = 0;
+    // volatile int crash = num1 / num2;
 
-    const char* message = "[ Welcome to kdbOS v0.0.0 ]";
-    const char* subtitle = "* * *";
-    
-    uint16_t msg_len = strlen(message);
-    uint16_t sub_len = strlen(subtitle);
+    outb(PIC1_DATA, 0xFD); 
+    outb(PIC2_DATA, 0xFF);
+    __asm__ volatile("sti");
 
-    const uint16_t msg_row = 11;
-    const uint16_t msg_col = (SCREEN_COLS - msg_len) / 2;
-    const uint16_t sub_col = (SCREEN_COLS - sub_len) / 2;
+    vterm_set_color(COLOR_WHITE, COLOR_BLACK);
+    vterm_print_aligned(2, "Welcome to kdbOS!", VTERM_ALIGN_CENTER);
+    vterm_print_aligned(3, "----------------------------------------", VTERM_ALIGN_CENTER);
 
-    draw_border(msg_row - 3, GREEN);
-    wait(DELAY_LONG);
+    vterm_set_color(COLOR_WHITE, COLOR_BLACK);
+    vterm_move_cursor(5, 0);
+    vterm_write("Test keyboard input here: ");
 
-    draw_letter(subtitle, msg_row - 1, sub_col, GREEN, BLACK);
-    wait(DELAY_LONG);
-
-    draw_letter(message, msg_row, msg_col, LIGHTGREEN, BLACK);
-    wait(DELAY_LONG);
-
-    draw_letter(subtitle, msg_row + 1, sub_col, GREEN, BLACK);
-    wait(DELAY_LONG);
-
-    draw_border(msg_row + 3, GREEN);
-    wait(DELAY_LONG);
+    while (1) {
+        __asm__ volatile("hlt"); 
+    }
 
     return 0;
 }

@@ -18,7 +18,11 @@ align 4
 section .text
 loader:
     mov esp, kernel_stack + KERNEL_STACK_SIZE
+    push ebx
+    push eax
+
     call kernel_main
+    
     hang:
         jmp hang
 
