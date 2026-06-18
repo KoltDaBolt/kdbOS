@@ -8,24 +8,35 @@ SECTIONS {
         *(.multiboot)
     }
 
-    .text ALIGN(0x1000) :
+    . = ALIGN(0x1000);
+    _text_start = .;
+    .text  :
     {
         *(.text*)
     }
 
-    .rodata ALIGN(0x1000) :
+    . = ALIGN(0x1000);
+    _rodata_start = .;
+    .rodata :
     {
         *(.rodata*)
     }
 
-    .data ALIGN(0x1000) :
+    . = ALIGN(0x1000);
+    _data_start = .;
+    .data :
     {
         *(.data)
     }
 
-    .bss ALIGN (0x1000) :
+    . = ALIGN(0x1000);
+    _bss_start = .;
+    .bss :
     {
         *(COMMON)
         *(.bss)
     }
+
+    . = ALIGN(0x1000);
+    _kernel_end = .;
 }

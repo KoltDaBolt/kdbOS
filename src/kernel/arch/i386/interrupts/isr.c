@@ -1,6 +1,5 @@
 #include "vterm.h"
 #include "isr.h"
-#include "string.h"
 #include "panic.h"
 
 static IsrHandler cpu_exception_handlers[CPU_ENTRIES]   = {0};

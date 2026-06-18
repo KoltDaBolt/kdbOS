@@ -35,6 +35,14 @@ void paging_switch_address_space(VirtualAddressSpace*);
 void paging_invalidate_page_cache(uint32_t);
 void paging_page_fault_handler(CpuRegisters*);
 
+// A frame is a 4 KB chunk of physical RAM (4096 bytes)
+// A page is a 4 KB chunk of virtual RAM
+// Each Page is 4 bytes (32 bits) long. It holds the physical address of one frame plus flags
+// The PageTable contains 1024 Page entries and is 4 KB long (1024 * 4 bytes)
+//      - Each entry maps a 4 KB frame
+//      - One page table maps 1024 * 4 KB = 4 MB
+// The VirtualAddressSpace contains 4 GB (4096 MB) (1024 * 4 MB)
+
 
 // 31          22 21          12 11                            0
 // ┌──────────────┬──────────────┬──────────────────────────────┐
@@ -43,29 +51,29 @@ void paging_page_fault_handler(CpuRegisters*);
 // └──────┬───────┴──────┬───────┴──────────────┬───────────────┘
 //        │              │                      │
 //        ▼              │                      │
-//  1. CHOOSE ENTRY      │                      │
-//   [VirtualAddressSpace]                      │
-//   ┌─────────────────────────────┐            │
-//   │ directory_entries[0]        │            │
-//   │ directory_entries[1] ───────┼┐           │
-//   │   [page_table_addr=0x3000]  ││           │
-//   │ ...                         ││           │
-//   │ directory_entries[1023]     ││           │
-//   └─────────────────────────────┘│           │
-//                                  │           │
-//        ┌─────────────────────────┘           │
-//        ▼                                     │
-//  2. FOLLOW page_table_addr                   │
-//   [PageTable @ Physical 0x3000]              │
-//   ┌─────────────────────────────┐            │
-//   │ pages[0]                    │            │
-//   │ pages[1] ───────────────────┼┐           │
-//   │   [frame_addr=0x5000]       ││           │
-//   │ ...                         ││           │
-//   │ pages[1023]                 ││           │
-//   └─────────────────────────────┘│           │
-//                                  │           │
-//        ┌─────────────────────────┘           │
+//  1. CHOOSE ENTRY      └─────────────┐        │
+//   [VirtualAddressSpace]             │        │
+//   ┌─────────────────────────────┐   │        │
+//   │ directory_entries[0]        │   │        │
+//   │ directory_entries[1]        |   │        │
+//   │   [page_table_addr=0x3000] ─┼─┐ │        │
+//   │ ...                         │ │ │        │
+//   │ directory_entries[1023]     │ │ │        │
+//   └─────────────────────────────┘ │ │        │
+//                                   │ │        │
+//        ┌──────────────────────────┘ │        │
+//        ▼                            │        │
+//  2. FOLLOW page_table_addr          │        │
+//   [PageTable @ Physical 0x3000]     │        │
+//   ┌─────────────────────────────┐   │        │
+//   │ pages[0]                    │   │        │
+//   │ pages[1] ───────────────────┼───┘        │
+//   │   [frame_addr=0x5000] ──────┼─┐          │
+//   │ ...                         │ │          │
+//   │ pages[1023]                 │ │          │
+//   └─────────────────────────────┘ │          │
+//                                   │          │
+//        ┌──────────────────────────┘          │
 //        ▼                                     │
 //  3. COMBINE BASE + OFFSET                    │
 //   [Physical Frame @ 0x5000]                  │
@@ -75,3 +83,36 @@ void paging_page_fault_handler(CpuRegisters*);
 //   │ byte[4] <───────────────────┼────────────┘
 //   │ ...                         │  (TARGET BYTE ACQUIRED!)
 //   └─────────────────────────────┘
+
+
+// Identity-Mapped Virtual Address Space of Kernel (0x00000000 to 0x007FFFFF)
+
+// ======================= PAGE TABLE 0 (0MB to 4MB) =======================
+
+// 0x00000000 ┌─────────────────────────────────────────┐
+//            │ Reserved System Space                   │ ──► [Read-Only / Supervisor]
+//            │ (Interrupt Vectors, BIOS, VGA Buffer)  │     PMM Reserved Region #1
+// 0x00100000 ├─────────────────────────────────────────┤
+//            │ .text (Kernel Code Instructions)        │ ──► [Read-Only / Supervisor]
+//            ├─────────────────────────────────────────┤     PMM Reserved Region #2
+//            │ .rodata (Constants & Strings)           │ ──► [Read-Only / Supervisor]
+// _data_start├─────────────────────────────────────────┤
+//            │ .data (Initialized Global Variables)    │ ──► [Read/Write / Supervisor]
+//            ├─────────────────────────────────────────┤
+//            │ .bss (Uninitialized Variables)          │ ──► [Read/Write / Supervisor]
+//            ├─────────────────────────────────────────┤
+//            │ Kernel Stack (Allocated in Assembly)    │ ──► [Read/Write / Supervisor]
+//            │ [Uncapped expansion room within Table 0]│
+// _kernel_end└─────────────────────────────────────────┘
+
+// ======================= PAGE TABLE 1 (4MB to 8MB) =======================
+
+// 0x00400000 ┌─────────────────────────────────────────┐ ◄── PMM Bitmap Array Allocation
+//            │ PMM Physical Frame Bitmap               │ ──► [Read/Write / Supervisor]
+//            │ (Variable length based on installed RAM)│
+//            ├─────────────────────────────────────────┤ ◄── dynamic_heap_start (Page-Aligned)
+//            │                                         │
+//            │ KERNEL HEAP                             │ ──► [Read/Write / Supervisor]
+//            │ (Managed dynamically by kmalloc/kfree)  │     Slices up into MemoryBlockHeaders
+//            │                                         │
+// 0x007FFFFF └─────────────────────────────────────────┘ ◄── End of Table 1 (Ceiling)

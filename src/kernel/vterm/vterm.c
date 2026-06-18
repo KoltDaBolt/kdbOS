@@ -1,7 +1,7 @@
 #include "vterm.h"
 #include "io.h"
 #include "asm.h"
-#include "string.h"
+#include "kstring.h"
 
 static VTermCell screen_buffer[SCREEN_ROWS][SCREEN_COLS];
 
@@ -238,7 +238,7 @@ void vterm_print_at(uint16_t row, uint16_t col, const char* text) {
 }
 
 void vterm_print_aligned(uint16_t row, const char* text, VTermAlignment align) {
-    uint32_t len = strlen(text);
+    uint32_t len = kstrlen(text);
     uint16_t col = 0;
 
     switch (align) {

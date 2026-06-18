@@ -11,7 +11,7 @@ static void local_clear_bytes(void* ptr, uint32_t num_bytes) {
     }
 }
 
-void pmm_init(size_t total_ram_bytes, uint32_t* bitmap_start_addr) {
+uint32_t pmm_init(size_t total_ram_bytes, uint32_t* bitmap_start_addr) {
     total_frames = total_ram_bytes / PMM_FRAME_SIZE;
 
     bitmap_size_uint32s = total_frames / 32;
@@ -23,6 +23,11 @@ void pmm_init(size_t total_ram_bytes, uint32_t* bitmap_start_addr) {
 
     uint32_t total_bitmap_bytes = bitmap_size_uint32s * sizeof(uint32_t);
     local_clear_bytes(pmm_bitmap, total_bitmap_bytes);
+
+    uint32_t bitmap_size_aligned = (total_bitmap_bytes + 4095) & ~4095;
+    uint32_t next_free_address = (uint32_t)bitmap_start_addr + bitmap_size_aligned;
+
+    return next_free_address;
 }
 
 uint32_t pmm_allocate_frame(void) {

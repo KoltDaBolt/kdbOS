@@ -1,6 +1,6 @@
-#include "types.h"
+#include "kstring.h"
 
-int64_t strlen(const char* str) {
+int64_t kstrlen(const char* str) {
     int64_t len = 0;
 
     while (*(str + len)) {
@@ -10,7 +10,7 @@ int64_t strlen(const char* str) {
     return len;
 }
 
-char* strncpy(const char* src, char* dest, uint32_t n) {
+char* kstrncpy(const char* src, char* dest, uint32_t n) {
     if (n == 0) return dest;
 
     uint32_t i = 0;
@@ -23,8 +23,8 @@ char* strncpy(const char* src, char* dest, uint32_t n) {
     return dest;
 }
 
-char* strncat(char* dest, const char* src, uint32_t n) {
-    uint32_t dest_len = strlen(dest);
+char* kstrncat(char* dest, const char* src, uint32_t n) {
+    uint32_t dest_len = kstrlen(dest);
     
     if (dest_len >= n || n == 0) {
         return dest;

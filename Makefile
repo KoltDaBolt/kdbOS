@@ -5,7 +5,7 @@ CODEDIRS = . \
 			src/kernel/arch/i386/interrupts \
 			src/kernel/arch/i386/memory \
 			src/kernel/arch/i386/tables \
-			src/kernel/klib \
+			src/kernel/klibc \
 			src/kernel/memory \
 			src/kernel/vterm
 
@@ -16,7 +16,7 @@ INCDIRS = . \
 			src/include/arch/i386/interrupts \
 			src/include/arch/i386/memory \
 			src/include/arch/i386/tables \
-			src/include/klib \
+			src/include/klibc \
 			src/include/memory \
 			src/include/vterm
 
@@ -65,7 +65,7 @@ clean:
 	rm -rf src/kernel/arch/i386/interrupts/*.o src/kernel/arch/i386/interrupts/*.d
 	rm -rf src/kernel/arch/i386/memory/*.o src/kernel/arch/i386/memory/*.d
 	rm -rf src/kernel/arch/i386/tables/*.o src/kernel/arch/i386/tables/*.d
-	rm -rf src/kernel/klib/*.o src/kernel/klib/*.d
+	rm -rf src/kernel/klibc/*.o src/kernel/klibc/*.d
 	rm -rf src/kernel/memory/*.o src/kernel/memory/*.d
 	rm -rf src/kernel/vterm/*.o src/kernel/vterm/*.d
 	rm -rf kernel.elf kdbOS.iso iso/

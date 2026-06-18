@@ -1,6 +1,6 @@
 #include "vmm.h"
 #include "pmm.h"
-#include "memory.h"
+#include "kmemory.h"
 
 void vmm_map_page(VirtualAddressSpace* space, uint32_t virtual_addr, uint32_t physical_addr, bool is_rw, bool is_user) {
     uint32_t directory_index = (virtual_addr >> 22) & 0x3FF;
@@ -11,7 +11,7 @@ void vmm_map_page(VirtualAddressSpace* space, uint32_t virtual_addr, uint32_t ph
         
         PageTable* new_table = (PageTable*)new_table_frame;
         
-        memset(new_table, 0, sizeof(PageTable));
+        kmemset(new_table, 0, sizeof(PageTable));
 
         space->directory_entries[directory_index].present = 1;
         space->directory_entries[directory_index].rw = is_rw ? 1 : 0;
