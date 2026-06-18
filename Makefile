@@ -1,5 +1,24 @@
-CODEDIRS=. src/kernel src/kernel/arch/i386 src/kernel/arch/i386/drivers src/kernel/arch/i386/interrupts src/kernel/arch/i386/tables src/kernel/klib src/kernel/vterm
-INCDIRS=. src/include src/include/arch/i386 src/include/arch/i386/drivers src/include/arch/i386/interrupts src/include/arch/i386/tables src/include/klib src/include/vterm
+CODEDIRS = . \
+			src/kernel \
+			src/kernel/arch/i386 \
+			src/kernel/arch/i386/drivers \
+			src/kernel/arch/i386/interrupts \
+			src/kernel/arch/i386/memory \
+			src/kernel/arch/i386/tables \
+			src/kernel/klib \
+			src/kernel/memory \
+			src/kernel/vterm
+
+INCDIRS = . \
+			src/include \
+			src/include/arch/i386 \
+			src/include/arch/i386/drivers \
+			src/include/arch/i386/interrupts \
+			src/include/arch/i386/memory \
+			src/include/arch/i386/tables \
+			src/include/klib \
+			src/include/memory \
+			src/include/vterm
 
 ASM = nasm
 ASMFLAGS = -f elf32
@@ -44,7 +63,9 @@ clean:
 	rm -rf src/kernel/arch/i386/*.o src/kernel/arch/i386/*.d
 	rm -rf src/kernel/arch/i386/drivers/*.o src/kernel/arch/i386/drivers/*.d
 	rm -rf src/kernel/arch/i386/interrupts/*.o src/kernel/arch/i386/interrupts/*.d
+	rm -rf src/kernel/arch/i386/memory/*.o src/kernel/arch/i386/memory/*.d
 	rm -rf src/kernel/arch/i386/tables/*.o src/kernel/arch/i386/tables/*.d
 	rm -rf src/kernel/klib/*.o src/kernel/klib/*.d
+	rm -rf src/kernel/memory/*.o src/kernel/memory/*.d
 	rm -rf src/kernel/vterm/*.o src/kernel/vterm/*.d
 	rm -rf kernel.elf kdbOS.iso iso/

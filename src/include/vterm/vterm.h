@@ -51,9 +51,15 @@ typedef enum {
     BUFFER_MODE_BLOCK
 } VTermBufferingMode;
 
-void vterm_configure_cursor(VTermCursor);
+void vterm_set_cursor_visible(bool);
+void vterm_set_cursor_shape(CursorShape);
 void vterm_move_cursor(uint16_t, uint16_t);
-void vterm_set_buffering_mode(VTermBufferingMode mode);
+uint16_t vterm_get_cursor_row(void);
+uint16_t vterm_get_cursor_col(void);
+VTermCursor vterm_get_cursor_config(void);
+bool vterm_is_cursor_active(void);
+
+void vterm_set_buffering_mode(VTermBufferingMode);
 
 void vterm_init(VTermColor, VTermColor);
 void vterm_clear(VTermColor, VTermColor);
@@ -66,8 +72,6 @@ void vterm_print_at(uint16_t, uint16_t, const char*);
 void vterm_print_aligned(uint16_t, const char*, VTermAlignment);
 void vterm_set_color(VTermColor, VTermColor);
 
-uint16_t vterm_get_cursor_row(void);
-uint16_t vterm_get_cursor_col(void);
 
 void vterm_flush(void);
 

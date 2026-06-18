@@ -35,7 +35,7 @@ void keyboard_handler() {
     if (status & 0x01) {
         uint8_t scancode = inb(KEYBOARD_DATA_PORT);
 
-        pic_send_eoi(33);
+        pic_send_eoi(1);
 
         if (scancode == 0xE0) {
             is_extended = true;

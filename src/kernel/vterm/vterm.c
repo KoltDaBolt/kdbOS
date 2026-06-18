@@ -9,7 +9,7 @@ static uint16_t cursor_row = 0;
 static uint16_t cursor_col = 0;
 static VTermColor current_fg = COLOR_WHITE;
 static VTermColor current_bg = COLOR_BLACK;
-static VTermCursor active_cursor_style = { .shape = CURSOR_SHAPE_LINE, .visible = true };
+static VTermCursor active_cursor_style = { .shape = CURSOR_SHAPE_BLOCK, .visible = true };
 
 static VTermBufferingMode current_mode = BUFFER_MODE_STREAM;
 
@@ -32,34 +32,47 @@ static const uint8_t vga_color_lookup[] = {
     VGA_COLOR_WHITE
 };
 
-void vterm_configure_cursor(VTermCursor config) {
-    active_cursor_style = config;
-    
-    if (!config.visible) {
-        outb(CRTC_CMD_PORT, CURSOR_STYLE_START_CMD);
-        outb(CRTC_DATA_PORT, 0x20);
+void vterm_set_cursor_visible(bool visible) {
+    active_cursor_style.visible = visible;
+
+    outb(CRTC_CMD_PORT, CURSOR_STYLE_START_CMD);
+    uint8_t current_val = inb(CRTC_DATA_PORT);
+
+    if (!visible) {
+        outb(CRTC_DATA_PORT, current_val | 0x20);
+    } else {
+        outb(CRTC_DATA_PORT, current_val & ~0x20);
+        vterm_move_cursor(cursor_row, cursor_col);
+    }
+}
+
+void vterm_set_cursor_shape(CursorShape shape) {
+    active_cursor_style.shape = shape;
+
+    if (!active_cursor_style.visible) {
         return;
     }
 
-    uint8_t start_scanline = 14; 
+    uint8_t start_scanline = 14;
     uint8_t end_scanline = 15;
 
-    if (config.shape == CURSOR_SHAPE_BLOCK) {
-        start_scanline = 0; 
+    if (shape == CURSOR_SHAPE_BLOCK) {
+        start_scanline = 0;
     }
 
     outb(CRTC_CMD_PORT, CURSOR_STYLE_START_CMD);
-    outb(CRTC_DATA_PORT, start_scanline & 0x1F);
+    outb(CRTC_DATA_PORT, (inb(CRTC_DATA_PORT) & 0xC0) | (start_scanline & 0x1F));
 
     outb(CRTC_CMD_PORT, CURSOR_STYLE_END_CMD);
-    outb(CRTC_DATA_PORT, end_scanline & 0x1F);
-
-    vterm_move_cursor(cursor_row, cursor_col);
+    outb(CRTC_DATA_PORT, (inb(CRTC_DATA_PORT) & 0xE0) | (end_scanline & 0x1F));
 }
 
 void vterm_move_cursor(uint16_t row, uint16_t col) {
     if (row < SCREEN_ROWS) cursor_row = row;
-    if (col < SCREEN_COLS) cursor_col = col;
+    if (col <= SCREEN_COLS) cursor_col = col;
+
+    uint16_t hw_col = (cursor_col >= SCREEN_COLS) ? (SCREEN_COLS - 1) : cursor_col;
+    uint16_t hw_row = (cursor_row >= SCREEN_ROWS) ? (SCREEN_ROWS - 1) : cursor_row;
     
     if (active_cursor_style.visible) {
         uint16_t position = (cursor_row * SCREEN_COLS) + cursor_col;
@@ -70,6 +83,22 @@ void vterm_move_cursor(uint16_t row, uint16_t col) {
     }
 }
 
+uint16_t vterm_get_cursor_row(void) {
+    return cursor_row;
+}
+
+uint16_t vterm_get_cursor_col(void) {
+    return cursor_col;
+}
+
+VTermCursor vterm_get_cursor_config(void) {
+    return active_cursor_style;
+}
+
+bool vterm_is_cursor_visible(void) {
+    return active_cursor_style.visible;
+}
+
 void vterm_set_buffering_mode(VTermBufferingMode mode) {
     current_mode = mode;
 }
@@ -78,9 +107,6 @@ void vterm_init(VTermColor fg, VTermColor bg) {
     current_mode = BUFFER_MODE_STREAM;
     vterm_clear(fg, bg);
     vterm_flush();
-    
-    VTermCursor default_cursor = { .shape = CURSOR_SHAPE_LINE, .visible = true };
-    vterm_configure_cursor(default_cursor);
 }
 
 void vterm_clear(VTermColor fg, VTermColor bg) {
@@ -119,44 +145,56 @@ static void vterm_scroll(void) {
 }
 
 void vterm_write_char(char c) {
-    uint16_t target_row = cursor_row;
-    uint16_t target_col = cursor_col;
-
     if (c == '\n') {
         vterm_move_cursor(cursor_row + 1, 0);
-    } else if (c == '\b') {
-        if (cursor_col > 0) {
-            vterm_move_cursor(cursor_row, cursor_col - 1);
-            screen_buffer[cursor_row][cursor_col].character = ' ';
-            screen_buffer[cursor_row][cursor_col].fg = current_fg;
-            screen_buffer[cursor_row][cursor_col].bg = current_bg;
-            
-            if (current_mode == BUFFER_MODE_STREAM) {
-                write_char_to_framebuffer(' ', cursor_row, cursor_col, vga_color_lookup[current_fg], vga_color_lookup[current_bg]);
-            }
-        } else if (cursor_row > 0) {
-            vterm_move_cursor(cursor_row - 1, SCREEN_COLS - 1);
+        if (cursor_row >= SCREEN_ROWS) {
+            vterm_scroll();
         }
-    } else {
-        if (cursor_row < SCREEN_ROWS && cursor_col < SCREEN_COLS) {
-            screen_buffer[cursor_row][cursor_col].character = c;
-            screen_buffer[cursor_row][cursor_col].fg = current_fg;
-            screen_buffer[cursor_row][cursor_col].bg = current_bg;
-            vterm_move_cursor(cursor_row, cursor_col + 1);
+        return;
+    }
+    
+    if (c == '\b') {
+        uint16_t target_row = cursor_row;
+        uint16_t target_col = cursor_col;
+
+        if (target_col > 0) {
+            target_col--;
+        } else if (target_row > 0) {
+            target_row--;
+            target_col = SCREEN_COLS - 1;
+        } else {
+            return;
         }
-        if (cursor_col >= SCREEN_COLS) {
-            vterm_move_cursor(cursor_row + 1, 0);
+
+        vterm_move_cursor(target_row, target_col);
+        screen_buffer[cursor_row][cursor_col].character = ' ';
+        
+        if (current_mode == BUFFER_MODE_STREAM) {
+            write_char_to_framebuffer(' ', cursor_row, cursor_col, 
+                                      vga_color_lookup[current_fg], 
+                                      vga_color_lookup[current_bg]);
         }
+        return;
+    }
+
+    if (cursor_col >= SCREEN_COLS) {
+        cursor_col = 0;
+        cursor_row++;
     }
 
     if (cursor_row >= SCREEN_ROWS) {
         vterm_scroll();
-    } else {
-        if (current_mode == BUFFER_MODE_STREAM && c != '\n') {
-            write_char_to_framebuffer(c, target_row, target_col, vga_color_lookup[current_fg], vga_color_lookup[current_bg]);
-        }
     }
-    
+
+    screen_buffer[cursor_row][cursor_col].character = c;
+    screen_buffer[cursor_row][cursor_col].fg = current_fg;
+    screen_buffer[cursor_row][cursor_col].bg = current_bg;
+
+    if (current_mode == BUFFER_MODE_STREAM) {
+        write_char_to_framebuffer(c, cursor_row, cursor_col, vga_color_lookup[current_fg], vga_color_lookup[current_bg]);
+    }
+
+    cursor_col++;
     vterm_move_cursor(cursor_row, cursor_col);
 }
 
@@ -221,14 +259,6 @@ void vterm_print_aligned(uint16_t row, const char* text, VTermAlignment align) {
 void vterm_set_color(VTermColor fg, VTermColor bg) {
     current_fg = fg;
     current_bg = bg;
-}
-
-uint16_t vterm_get_cursor_row(void) {
-    return cursor_row;
-}
-
-uint16_t vterm_get_cursor_col(void) {
-    return cursor_col;
 }
 
 void vterm_flush(void) {
