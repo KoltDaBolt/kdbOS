@@ -4,9 +4,12 @@ CODEDIRS = . \
 			src/kernel/arch/i386/drivers \
 			src/kernel/arch/i386/interrupts \
 			src/kernel/arch/i386/memory \
+			src/kernel/arch/i386/proc \
 			src/kernel/arch/i386/tables \
+			src/kernel/ds \
 			src/kernel/klibc \
 			src/kernel/memory \
+			src/kernel/proc \
 			src/kernel/vterm
 
 INCDIRS = . \
@@ -15,9 +18,12 @@ INCDIRS = . \
 			src/include/arch/i386/drivers \
 			src/include/arch/i386/interrupts \
 			src/include/arch/i386/memory \
+			src/include/arch/i386/proc \
 			src/include/arch/i386/tables \
+			src/include/ds \
 			src/include/klibc \
 			src/include/memory \
+			src/include/proc \
 			src/include/vterm
 
 ASM = nasm
@@ -64,8 +70,11 @@ clean:
 	rm -rf src/kernel/arch/i386/drivers/*.o src/kernel/arch/i386/drivers/*.d
 	rm -rf src/kernel/arch/i386/interrupts/*.o src/kernel/arch/i386/interrupts/*.d
 	rm -rf src/kernel/arch/i386/memory/*.o src/kernel/arch/i386/memory/*.d
+	rm -rf src/kernel/arch/i386/proc/*.o src/kernel/arch/i386/proc/*.d
 	rm -rf src/kernel/arch/i386/tables/*.o src/kernel/arch/i386/tables/*.d
+	rm -rf src/kernel/ds/*.o src/kernel/ds/*.d
 	rm -rf src/kernel/klibc/*.o src/kernel/klibc/*.d
 	rm -rf src/kernel/memory/*.o src/kernel/memory/*.d
+	rm -rf src/kernel/proc/*.o src/kernel/proc/*.d
 	rm -rf src/kernel/vterm/*.o src/kernel/vterm/*.d
 	rm -rf kernel.elf kdbOS.iso iso/

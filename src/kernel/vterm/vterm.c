@@ -75,7 +75,7 @@ void vterm_move_cursor(uint16_t row, uint16_t col) {
     uint16_t hw_row = (cursor_row >= SCREEN_ROWS) ? (SCREEN_ROWS - 1) : cursor_row;
     
     if (active_cursor_style.visible) {
-        uint16_t position = (cursor_row * SCREEN_COLS) + cursor_col;
+        uint16_t position = (hw_row * SCREEN_COLS) + hw_col;
         outb(CRTC_CMD_PORT, CURSOR_POS_HIGH_BYTE_CMD);
         outb(CRTC_DATA_PORT, (uint8_t)((position >> 8) & 0xFF));
         outb(CRTC_CMD_PORT, CURSOR_POS_LOW_BYTE_CMD);
@@ -269,4 +269,10 @@ void vterm_flush(void) {
         }
     }
     vterm_move_cursor(cursor_row, cursor_col);
+}
+
+void vterm_write_label_hex(const char* label, uint32_t value) {
+    vterm_write(label);
+    vterm_write_hex(value, COLOR_WHITE, COLOR_BLACK);
+    vterm_write("\n");
 }

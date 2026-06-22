@@ -23,9 +23,10 @@ void* kmemcpy(const void* src, void* dest, size_t count) {
 void kmalloc_init(uint32_t dynamic_heap_start) {
     heap_start = (MemoryBlockHeader*)dynamic_heap_start;
 
-    size_t heap_size = 0x007FFFFF - dynamic_heap_start;
+    uint32_t identity_mapped_cieling = 0x007FFFFF;
+    size_t kernel_heap_size = identity_mapped_cieling - dynamic_heap_start;
 
-    heap_start->size = heap_size - sizeof(MemoryBlockHeader);
+    heap_start->size = kernel_heap_size - sizeof(MemoryBlockHeader);
     heap_start->is_free = true;
     heap_start->next = NULL;
 }

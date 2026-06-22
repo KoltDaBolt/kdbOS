@@ -5,6 +5,7 @@
 
 #define PAGE_SIZE 4096
 #define TOTAL_ENTRIES 1024
+#define KERNEL_VIRTUAL_OFFSET 0xC0000000
 
 typedef struct {
     uint32_t present            : 1;  // Bit 0: Is this page mapped to a physical frame? (0 = Not Mapped, 1 = Mapped)
@@ -24,11 +25,11 @@ typedef struct {
 
 typedef struct {
     Page pages[TOTAL_ENTRIES];
-} __attribute__((aligned(PAGE_SIZE))) PageTable;
+} __attribute__((packed, aligned(PAGE_SIZE))) PageTable;
 
 typedef struct {
     PageTableDirectoryEntry directory_entries[TOTAL_ENTRIES];
-} __attribute__((aligned(PAGE_SIZE))) VirtualAddressSpace;
+} __attribute__((packed, aligned(PAGE_SIZE))) VirtualAddressSpace;
 
 void paging_init(void);
 void paging_switch_address_space(VirtualAddressSpace*);
@@ -91,7 +92,7 @@ void paging_page_fault_handler(CpuRegisters*);
 
 // 0x00000000 ┌─────────────────────────────────────────┐
 //            │ Reserved System Space                   │ ──► [Read-Only / Supervisor]
-//            │ (Interrupt Vectors, BIOS, VGA Buffer)  │     PMM Reserved Region #1
+//            │ (Interrupt Vectors, BIOS, VGA Buffer)   │     PMM Reserved Region #1
 // 0x00100000 ├─────────────────────────────────────────┤
 //            │ .text (Kernel Code Instructions)        │ ──► [Read-Only / Supervisor]
 //            ├─────────────────────────────────────────┤     PMM Reserved Region #2

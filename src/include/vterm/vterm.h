@@ -75,6 +75,8 @@ void vterm_set_color(VTermColor, VTermColor);
 
 void vterm_flush(void);
 
+void vterm_write_label_hex(const char* label, uint32_t value);
+
 static inline void kprint(const char* str) { vterm_write(str); }
 static inline void kprint_c(char c) { vterm_write_char(c); }
 static inline void kprint_hex(uint32_t val, VTermColor fg, VTermColor bg) { vterm_write_hex(val, fg, bg); }

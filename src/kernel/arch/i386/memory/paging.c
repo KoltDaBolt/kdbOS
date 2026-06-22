@@ -3,8 +3,7 @@
 #include "kmemory.h"
 #include "panic.h"
 
-static VirtualAddressSpace* kernel_directory = NULL;
-static PageTable* kernel_page_table = NULL;
+VirtualAddressSpace* kernel_directory = NULL;
 
 extern uint32_t _text_start;
 extern uint32_t _rodata_start;
@@ -20,8 +19,7 @@ void paging_init(void) {
     uint32_t second_kernel_table_frame_addr = pmm_allocate_frame();
 
     kernel_directory = (VirtualAddressSpace*)kernel_directory_frame_addr;
-    kernel_page_table = (PageTable*)kernel_page_table_frame_addr;
-
+    PageTable* kernel_page_table = (PageTable*)kernel_page_table_frame_addr;
     PageTable* second_page_table = (PageTable*)second_kernel_table_frame_addr;
 
     kmemset(kernel_directory, 0, sizeof(VirtualAddressSpace));
@@ -67,7 +65,7 @@ void paging_init(void) {
 
     register_cpu_handler(14, paging_page_fault_handler);
 
-    asm volatile("mov %0, %%cr3" :: "r"(kernel_directory_frame_addr));
+    paging_switch_address_space(kernel_directory);
 
     uint32_t cr0;
     asm volatile("mov %%cr0, %0" : "=r"(cr0));
@@ -76,7 +74,7 @@ void paging_init(void) {
 }
 
 void paging_switch_address_space(VirtualAddressSpace* space) {
-    asm volatile("mov %0, %%cr3" :: "r"(space));
+    asm volatile("mov %0, %%cr3" :: "r"((uint32_t)space));
 }
 
 void paging_invalidate_page_cache(uint32_t virtual_addr) {
